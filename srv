@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+
+if ! [ -x "$(command -v docker-compose)" ]; then
+  shopt -s expand_aliases
+  alias docker-compose='docker compose'
+fi
+
+# Переменные цветов, для более удобной работы с ними
+RED='\033[0;31m'
+WHITE='\033[1;37m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+GREY='\033[0;37m'
+
+# Закрывающий "тег" для цветов
+NC='\033[0m'
+
+# Система, на которой запускается докер
+UNAMEOUT="$(uname -s)"
+
+# Verify operating system is supported...
+case "${UNAMEOUT}" in
+  Linux*)             MACHINE=linux;;
+  Darwin*)            MACHINE=mac;;
+  *)                  MACHINE="UNKNOWN"
+esac
+
+if [ "$MACHINE" == "UNKNOWN" ]; then
+  echo -e "${ORANGE}Unsupported operating system [$(uname -s)]. Supports macOS, Linux, and Windows (WSL2).${NC}" >&2
+
+  exit 1
+fi
+
+# Подключаем .env файл
+if [ -f "./.env" ]; then
+  source .env.example
+else
+  echo -e "${RED}Убедитесь что вы определили .env файл${NC}\""
+
+  exit 1
+fi
+
+# Вывод справки
+function show_help() {
+  echo -e "${WHITE}Использование:${NC}"
+  echo -e "  ${GREEN}srv${NC} ${WHITE}[COMMAND]${NC} ${GREY}[ARGS...]${NC}"
+
+  echo
+  echo -e "${WHITE}Команды:${NC}"
+  echo -e "  ${GREEN}help${NC}                      ${WHITE}Вызов справки${NC}"
+
+  echo
+  echo -e "  ${GREEN}build${NC}                     ${WHITE}Сборка образов${NC}"
+  echo -e "  ${GREEN}up${NC}                        ${WHITE}Запустить все контейнеры${NC}"
+  echo -e "  ${GREEN}down${NC}                      ${WHITE}Остановить все контейнеры${NC}"
+  echo -e "  ${GREEN}restart${NC}                   ${WHITE}Перезапустить все контейнеры${NC}"
+  echo -e "  ${GREEN}[shell|bash]${NC} ${WHITE}[container]${NC}  ${WHITE}Запустить оболочку bash в нужном контейнере${NC}"
+}
+
+# Вывод ошибки при попытке выполнить неопределенную команду
+function unknown_command_handler() {
+  echo -e "${RED}No such command:${NC} ${ORANGE}$1${NC}"
+  echo
+
+  show_help
+}
+
+if [ $# -gt 0 ]; then
+  # Вызов справки
+  if [ "$1" == "help" ]; then
+    show_help
+
+  # Сборка образов
+  elif [ "$1" == "build" ]; then
+    docker-compose build --no-cache
+
+  # Запустить все контейнеры
+  elif [ "$1" == "up" ]; then
+    docker-compose up --no-recreate -d
+
+  # Остановить все контейнеры
+  elif [ "$1" == "down" ]; then
+    docker-compose down
+
+  # Перезапустить все контейнеры
+  elif [ "$1" == "restart" ]; then
+    docker-compose down && docker-compose up --no-recreate -d
+
+  # Перезапустить контейнер воркера
+  elif [ "$1" == "worker-restart" ]; then
+    docker-compose restart php-worker
+
+  # Запустить оболочку bash в нужном контейнере
+  elif [ "$1" == "shell" ] || [ "$1" == "bash" ]; then
+    shift 1
+
+    docker-compose exec "$1" bash
+
+  else
+    unknown_command_handler "$@"
+  fi
+else
+    unknown_command_handler "$@"
+fi
+

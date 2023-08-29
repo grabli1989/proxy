@@ -1,0 +1,6 @@
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/tehnomaster.kyivstar.ua.cert
+        keyFile: /certs/tehnomaster.kyivstar.ua.key

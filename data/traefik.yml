@@ -1,0 +1,53 @@
+api:
+  dashboard: true
+
+entryPoints:
+  http:
+    address: ":80"
+  https:
+    address: ":443"
+
+http:
+  routers:
+    http-catchall:
+      rule: hostregexp(`{host:.+}`)
+      entrypoints:
+      - http
+      middlewares:
+      - redirect-to-https
+
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: false
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    useBindPortIP: true
+  file:
+    fileName: /traefik.yml
+    watch: true
+
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/tehnomaster.kyivstar.ua.cert
+        keyFile: /certs/tehnomaster.kyivstar.ua.key
+  certificates:
+    - certFile: /certs/tehnomaster.kyivstar.ua.cert
+      keyFile: /certs/tehnomaster.kyivstar.ua.key
+      stores:
+        - default
+
+certificatesResolvers:
+  letsEncrypt:
+    acme:
+      email: grabli1989@gmail.com
+      storage: acme.json
+      caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
+      httpChallenge:
+        entryPoint: http

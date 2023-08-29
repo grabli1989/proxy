@@ -1,0 +1,66 @@
+version: '3.9'
+
+services:
+  ### TRAEFIK #########################################
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      frontend:
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/traefik.yml:/traefik.yml:ro
+      - ./data/acme.json:/acme.json
+      - ./certs/:/certs/:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.entrypoints=https"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.tehnomaster.kyivstar.ua`)"
+      - "traefik.http.routers.traefik.tls=true"
+        #      - "traefik.http.routers.traefik.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.services.traefik-traefik.loadbalancer.server.port=888"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$apr1$$zorbxchs$$l9xD9.aJVS/hvvEVxPU2X0"
+      - "traefik.http.routers.traefik.middlewares=traefik-auth"
+      - "traefik.http.middlewares.https_redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.https_redirect.redirectscheme.permanent=false"
+      - "traefik.http.routers.http_catchall.rule=HostRegexp(`{any:.+}`)"
+      - "traefik.http.routers.http_catchall.entrypoints=http"
+      - "traefik.http.routers.http_catchall.middlewares=https_redirect"
+
+  ### Mailhog ################################################
+  mailhog:
+    build: ./mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - frontend
+      - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=frontend"
+      - "traefik.backend=mailhog"
+      - "traefik.http.middlewares.smtp-auth.basicauth.users=admin:$$apr1$$RGfGRTxY$$YQBoz69qmnOji07SGN.Kl."
+      - "traefik.http.routers.smtp-http.middlewares=smtp-auth"
+      - "traefik.http.routers.smtp-http.entrypoints=https"
+      - "traefik.http.routers.smtp-http.rule=Host(`mailhog.tehnomaster.kyivstar.ua`)"
+      - "traefik.http.routers.smtp-http.tls=true"
+        #      - "traefik.http.routers.smtp-http.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.smtp-http.loadbalancer.server.port=8025"
+
+networks:
+  frontend:
+    name: frontend
+    external: true
+  backend:
+    driver: bridge
+    name: backend
