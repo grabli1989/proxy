@@ -12,9 +12,10 @@ http:
     http-catchall:
       rule: hostregexp(`{host:.+}`)
       entrypoints:
-        - http
+      - http
       middlewares:
-        - redirect-to-https
+      - redirect-to-https
+
   middlewares:
     redirect-to-https:
       redirectScheme:
@@ -26,15 +27,27 @@ providers:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
     useBindPortIP: true
-#  file:
-#    directory: /custom
-#    watch: true
+  file:
+    fileName: /traefik.yml
+    watch: true
+
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/tehnomaster.kyivstar.ua.cert
+        keyFile: /certs/tehnomaster.kyivstar.ua.key
+  certificates:
+    - certFile: /certs/tehnomaster.kyivstar.ua.cert
+      keyFile: /certs/tehnomaster.kyivstar.ua.key
+      stores:
+        - default
 
 certificatesResolvers:
   letsEncrypt:
     acme:
       email: grabli1989@gmail.com
       storage: acme.json
-      #      caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
+      caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
       httpChallenge:
         entryPoint: http

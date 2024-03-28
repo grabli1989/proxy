@@ -22,7 +22,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.entrypoints=https"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.tehnomaster.kyivstar.ua`)"
+      - "traefik.http.routers.traefik.rule=Host(`${APP_ADDRESS}`)"
       - "traefik.http.routers.traefik.tls=true"
         #      - "traefik.http.routers.traefik.tls.certresolver=letsEncrypt"
       - "traefik.http.routers.traefik.service=api@internal"
@@ -37,7 +37,7 @@ services:
 
   ### Mailhog ################################################
   mailhog:
-    build: ./mailhog
+    build: ./mailpit
     restart: unless-stopped
     ports:
       - "1025:1025"
@@ -52,7 +52,7 @@ services:
       - "traefik.http.middlewares.smtp-auth.basicauth.users=admin:$$apr1$$RGfGRTxY$$YQBoz69qmnOji07SGN.Kl."
       - "traefik.http.routers.smtp-http.middlewares=smtp-auth"
       - "traefik.http.routers.smtp-http.entrypoints=https"
-      - "traefik.http.routers.smtp-http.rule=Host(`mailhog.tehnomaster.kyivstar.ua`)"
+      - "traefik.http.routers.smtp-http.rule=Host(`${SMPT_MAIL_TEST_ADDRESS}`)"
       - "traefik.http.routers.smtp-http.tls=true"
         #      - "traefik.http.routers.smtp-http.tls.certresolver=letsEncrypt"
       - "traefik.http.services.smtp-http.loadbalancer.server.port=8025"
